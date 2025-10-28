@@ -201,34 +201,27 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 	if (huart==&huart1){
-		if (rcv_cnt == 0){
-			if (temp_data == 0xCC){
-				rcv_buf[rcv_cnt] = temp_data;
-				rcv_cnt++;
-				HAL_UART_Receive_IT(&huart1,&temp_data,1);
-			}else{
-				rcv_cnt=0;
-				HAL_UART_Receive_IT(&huart1,&temp_data,1);
-			}
+		if (temp_data == 0xCC && rcv_cnt == 0){
+			rcv_buf[rcv_cnt] = temp_data;
+			rcv_cnt++;
+			HAL_UART_Receive_IT(&huart1,&temp_data,1);
 		}
-		else if (rcv_cnt ==1 ){
-			if (temp_data == 0xDD){
-				rcv_buf[rcv_cnt] = temp_data;
-				rcv_cnt++;
-				HAL_UART_Receive_IT(&huart1, &temp_data, 1);
-			}else{
-				rcv_cnt=0;
-				HAL_UART_Receive_IT(&huart1, &temp_data, 1);
-			}
+		else if (temp_data == 0xDD && rcv_cnt ==1 ){
+			rcv_buf[rcv_cnt] = temp_data;
+			rcv_cnt++;
+			HAL_UART_Receive_IT(&huart1, &temp_data, 1);
 		}
 		else if (rcv_cnt>=2 && rcv_cnt<8){
 			rcv_buf[rcv_cnt] = temp_data;
 			rcv_cnt++;
-			if (rcv_cnt == 8){
+			if (rcv_cnt >= 4+rcv_buf[3] || rcv_cnt>= 8){
 				uint8_t id = rcv_buf[2];
-        uint8_t count = rcv_buf[3];
-        uint8_t dist[4] = {rcv_buf[4], rcv_buf[5], rcv_buf[6], rcv_buf[7]};
-				sprintf(send_buf, "ID:%d 个数:%d 距离:%d %d %d %d \r\n", id, count, dist[0], dist[1], dist[2], dist[3]);
+				uint8_t count = rcv_buf[3];
+				if(count == 1) sprintf(send_buf, "ID:%d个数:%d距离:%d\r\n", id, count, rcv_buf[4]);
+        else if(count == 2) sprintf(send_buf, "ID:%d个数:%d距离:%d/%d\r\n", id, count, rcv_buf[4], rcv_buf[5]);
+        else if(count == 3) sprintf(send_buf, "ID:%d个数:%d距离:%d/%d/%d\r\n", id, count, rcv_buf[4], rcv_buf[5], rcv_buf[6]);
+        else if(count == 4) sprintf(send_buf, "ID:%d个数:%d距离:%d/%d/%d/%d\r\n", id, count, rcv_buf[4], rcv_buf[5], rcv_buf[6], rcv_buf[7]);
+        else sprintf(send_buf, "ID:%d个数:%d距离:无效\r\n", id, count);
 				HAL_UART_Transmit(&huart1, (uint8_t*)send_buf, strlen(send_buf),1000);
 				rcv_cnt = 0;
         memset(rcv_buf, 0, sizeof(rcv_buf));
@@ -236,7 +229,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
       } else {
         HAL_UART_Receive_IT(&huart1, &temp_data, 1);
 			}
-		}
+		}else {
+			rcv_cnt = 0;
+      memset(rcv_buf, 0, sizeof(rcv_buf));
+      HAL_UART_Receive_IT(&huart1, &temp_data, 1);
+    }
 	}
 }
 /* USER CODE END 4 */
