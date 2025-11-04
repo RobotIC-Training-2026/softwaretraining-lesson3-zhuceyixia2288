@@ -47,7 +47,7 @@ UART_HandleTypeDef huart1;
 uint8_t rcv_buf[6] = {0};
 char send_buf[50] = {0};
 uint16_t send_len = 0;
-
+uint8_t send_flag = 0; 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -103,7 +103,12 @@ HAL_UART_Receive_IT(&huart1, rcv_buf, 6);
   while (1)
   {
     /* USER CODE END WHILE */
-
+		if (send_flag == 1)
+		{
+			HAL_Delay(1000);
+			HAL_UART_Transmit_IT(&huart1, (uint8_t*)send_buf, send_len);
+			send_flag =0;
+		}
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -212,7 +217,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 			sprintf((char*)send_buf,"AB °üÍ·´íÎó\r\n");
 		}
     send_len = strlen((char*)send_buf);
-		HAL_UART_Transmit(&huart1, (uint8_t*)send_buf, send_len,1000);
+		send_flag = 1;
 		HAL_UART_Receive_IT(&huart1, rcv_buf, 6);
 	}
 }

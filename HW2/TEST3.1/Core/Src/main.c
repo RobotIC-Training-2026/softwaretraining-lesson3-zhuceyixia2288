@@ -48,6 +48,7 @@ uint8_t rcv_buf[8]={0};
 uint8_t rcv_cnt = 0;
 uint8_t temp_data;
 char send_buf[64]={0};
+uint8_t send_flag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -102,7 +103,12 @@ HAL_UART_Receive_IT(&huart1,&temp_data,1);
   while (1)
   {
     /* USER CODE END WHILE */
-
+		if (send_flag == 1)
+		{
+			HAL_Delay(1000);
+			HAL_UART_Transmit(&huart1, (uint8_t*)send_buf, strlen(send_buf),1000);
+			send_flag = 0;
+		}
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -222,7 +228,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
         else if(count == 3) sprintf(send_buf, "ID:%d个数:%d距离:%d/%d/%d\r\n", id, count, rcv_buf[4], rcv_buf[5], rcv_buf[6]);
         else if(count == 4) sprintf(send_buf, "ID:%d个数:%d距离:%d/%d/%d/%d\r\n", id, count, rcv_buf[4], rcv_buf[5], rcv_buf[6], rcv_buf[7]);
         else sprintf(send_buf, "ID:%d个数:%d距离:无效\r\n", id, count);
-				HAL_UART_Transmit(&huart1, (uint8_t*)send_buf, strlen(send_buf),1000);
+				send_flag = 1;
 				rcv_cnt = 0;
         memset(rcv_buf, 0, sizeof(rcv_buf));
 				HAL_UART_Receive_IT(&huart1, &temp_data, 1);
